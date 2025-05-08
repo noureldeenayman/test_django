@@ -1,9 +1,13 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import Http404
 from .models import Post
+from django.core.paginator import Paginator
 
 def post_list(request):
-    posts = Post.objects.all()
+    post_list = Post.objects.all()
+    paginator = Paginator(post_list, 1)  # Show 3 posts per page
+    page_number = request.GET.get('page',1)
+    posts = paginator.page(page_number)
     return render(request, 'blog/post/list.html', {'posts': posts})
 
 def post_detail(request,year, month, day, post):
