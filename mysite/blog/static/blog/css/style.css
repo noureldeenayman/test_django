@@ -1,50 +1,31 @@
-html, body {
+body {
+    font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    font-family: Arial, sans-serif;
 }
-
-/* حاوية عليا لترتيب البوكس والمحتوى */
-.page-header {
-    display: flex;
-    justify-content: flex-end; /* يدفع البوكس لأقصى اليمين */
-    align-items: flex-start;
-    padding: 24px 24px 0 24px;
+#content {
+    width: 50%;
+    float: left;
+    padding: 20px;
 }
-
-/* sidebar بوكس مربع */
 #sidebar {
-    width: 240px;
-    min-height: 120px;
-    background: #f4f4f4;
-    border: 2px solid #ddd;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    width: 20%;
+    float: right;
+    padding: 25px;
+    background-color: #f0f0f0;
+    border-left: 1px solid #ddd;
 }
 
-/* عنوان البوكس */
-#sidebar h2 {
-    font-size: 1.2em;
+#sidebar p {
+    font-size: 1%;
+    color: #666;
+    margin: 5;
+    text-align: center;
+}
+
+h3 {
+  font-size: 1.2em;
     color: #333;
     margin: 0 0 8px 0;
     text-align: center;
-}
-
-/* نص البوكس */
-#sidebar p {
-    font-size: 1em;
-    color: #666;
-    margin: 0;
-    text-align: center;
-}
-
-/* محتوى الصفحة */
-#content {
-    padding: 32px 24px 24px 24px;
-    box-sizing: border-box;
 }
