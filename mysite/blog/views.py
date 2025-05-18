@@ -7,7 +7,7 @@ from .forms import EmailPostForm
 from django.views.decorators.http import require_POST
 from .forms import CommentForm
 from taggit.models import Tag
-
+from django.db.models import Count
 def post_list(request, tag_slug=None):
     post_list = Post.objects.all()
 
@@ -47,9 +47,13 @@ def post_detail(request,year, month, day, post):
                             )
     comments = post.comments.filter(active=True)
     form = CommentForm()
+    post_tags_ids = post.tags.values_list('slug', flat=True)
+
+    similar_posts = Post.objects.filter(tags__in=post_tags_ids).exclude(id=post.id)
+    similar_posts = similar_posts.annotate(same_tags=Count('tags')).order_by('-same_tags', '-publish')[:4]
     return render(request, 'blog/post/detail.html', {'post': post, 
                                                      'form': form,
-                                                     'comments': comments})
+                                                     'comments': comments,'similar_posts': similar_posts}) 
 def post_share(request, post_id):
     post = get_object_or_404(Post, id=post_id, status=Post.Status.PUBLISHED)
     sent =  False
