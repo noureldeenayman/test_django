@@ -8,6 +8,11 @@ from django.views.decorators.http import require_POST
 from .forms import CommentForm
 from taggit.models import Tag
 from django.db.models import Count
+from django.views.decorators.http import require_http_methods
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
+
+
 def post_list(request, tag_slug=None):
     post_list = Post.objects.all()
 
@@ -28,6 +33,8 @@ def post_list(request, tag_slug=None):
         posts = paginator.page(paginator.num_pages)
 
     return render(request, 'blog/post/list.html', {'posts': posts, 'tag':tag})
+
+
 class PostListView(ListView):
     model = Post
     template_name = 'blog/post/list.html'
@@ -36,6 +43,7 @@ class PostListView(ListView):
 
     def get_queryset(self):
         return Post.objects.filter(status=Post.Status.PUBLISHED).order_by('-publish')
+
 
 def post_detail(request,year, month, day, post):
 
@@ -54,6 +62,8 @@ def post_detail(request,year, month, day, post):
     return render(request, 'blog/post/detail.html', {'post': post, 
                                                      'form': form,
                                                      'comments': comments,'similar_posts': similar_posts}) 
+
+
 def post_share(request, post_id):
     post = get_object_or_404(Post, id=post_id, status=Post.Status.PUBLISHED)
     sent =  False
@@ -71,10 +81,7 @@ def post_share(request, post_id):
     return render(request, 'blog/post/share.html', {'post': post,
                                                      'form': form,
                                                      'sent': sent})
-from django.views.decorators.http import require_http_methods
 
-from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse
 
 @require_http_methods(["GET", "POST"])
 def post_comment(request, post_id):
