@@ -3,14 +3,12 @@ from .models import Post
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.generic import ListView
 from django.core.mail import send_mail
-from .forms import EmailPostForm
 from django.views.decorators.http import require_POST
-from .forms import CommentForm
+from .forms import CommentForm, SearchForm, EmailPostForm
 from taggit.models import Tag
-from django.db.models import Count
-from django.views.decorators.http import require_http_methods
-from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse
+from django.db.models import Count 
+from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
+
 
 
 def post_list(request, tag_slug=None):
@@ -45,23 +43,29 @@ class PostListView(ListView):
         return Post.objects.filter(status=Post.Status.PUBLISHED).order_by('-publish')
 
 
-def post_detail(request,year, month, day, post):
-
+def post_detail(request, year, month, day, post):
     post = get_object_or_404(Post, status=Post.Status.PUBLISHED,
-                            slug=post,
-                            publish__year=year,
-                            publish__month=month,
-                            publish__day=day
-                            )
+                             slug=post,
+                             publish__year=year,
+                             publish__month=month,
+                             publish__day=day)
+                             
     comments = post.comments.filter(active=True)
     form = CommentForm()
-    post_tags_ids = post.tags.values_list('slug', flat=True)
-
+    
+    # جلب IDs الخاصة بالـ tags المرتبطة بالبوست
+    post_tags_ids = post.tags.values_list('id', flat=True)
+    
+    # البحث عن منشورات مشابهة بناءً على نفس الـ tags
     similar_posts = Post.objects.filter(tags__in=post_tags_ids).exclude(id=post.id)
     similar_posts = similar_posts.annotate(same_tags=Count('tags')).order_by('-same_tags', '-publish')[:4]
-    return render(request, 'blog/post/detail.html', {'post': post, 
-                                                     'form': form,
-                                                     'comments': comments,'similar_posts': similar_posts}) 
+    
+    return render(request, 'blog/post/detail.html', {
+        'post': post,
+        'form': form,
+        'comments': comments,
+        'similar_posts': similar_posts
+    })
 
 
 def post_share(request, post_id):
@@ -83,7 +87,7 @@ def post_share(request, post_id):
                                                      'sent': sent})
 
 
-@require_http_methods(["GET", "POST"])
+@require_POST 
 def post_comment(request, post_id):
     post = get_object_or_404(Post, id=post_id, status=Post.Status.PUBLISHED)
     comment = None
@@ -94,10 +98,17 @@ def post_comment(request, post_id):
             comment = form.save(commit=False)
             comment.post = post
             comment.save()
-            # إعادة التوجيه إلى صفحة البوست بعد حفظ التعليق
-            return redirect(post.get_absolute_url())
-    else:
-        form = CommentForm()
-
     return render(request, 'blog/post/comment.html', {'post': post,
                                                       'form': form, 'comment': comment})
+def post_search(request):
+    form = SearchForm()
+    query = None
+    results = []
+    if 'query' in request.GET:
+        form = SearchForm(request.GET)
+        if form.is_valid():
+            query = form.cleaned_data['query']
+            search_vector =SearchVector('title', 'body')
+            search_query =SearchQuery(query, config='english')
+            results = Post.objects.annotate(search=search_vector, rank=SearchRank(search_vector, search_query)).filter(search=search_query).order_by('-rank')
+    return render(request, 'blog/post/search.html', {'form': form, 'query': query, 'results': results})
